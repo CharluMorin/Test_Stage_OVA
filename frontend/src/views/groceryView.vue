@@ -53,7 +53,7 @@ function removeItem(item) {
 }
 
 function clearAll() {
-  if (confirm("Remove every item from the list?")) {
+  if (confirm("Êtes-vous sûr de vouloir vider la liste?")) {
     store.clearList();
   }
 }
@@ -84,7 +84,9 @@ function formatPrice(price) {
       <div class="card border-0 shadow-sm mb-4">
         <div class="card-body p-3">
           <h2 class="h6 fw-bold text-dark mb-3">
-            {{ editingId === null ? "Ajouter un article" : "Modifier l'article" }}
+            {{
+              editingId === null ? "Ajouter un article" : "Modifier l'article"
+            }}
           </h2>
 
           <form novalidate @submit.prevent="submitForm">
@@ -100,7 +102,9 @@ function formatPrice(price) {
               </div>
 
               <div class="col-md-2">
-                <label class="form-label small fw-semibold mb-1">Quantité</label>
+                <label class="form-label small fw-semibold mb-1"
+                  >Quantité</label
+                >
                 <input
                   v-model.number="quantity"
                   type="number"
@@ -144,9 +148,7 @@ function formatPrice(price) {
       <!-- Liste -->
       <div class="card border-0 shadow-sm">
         <div class="card-body p-3">
-          <div
-            class="d-flex justify-content-between align-items-center mb-3"
-          >
+          <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
               <h2 class="h6 fw-bold text-dark mb-1">Liste des articles</h2>
               <p class="small text-secondary mb-0">
@@ -228,9 +230,7 @@ function formatPrice(price) {
 
               <tfoot>
                 <tr>
-                  <th colspan="3" class="text-end text-dark">
-                    Total
-                  </th>
+                  <th colspan="3" class="text-end text-dark">Total</th>
                   <th class="text-end text-success">
                     {{ formatPrice(store.totalPrice) }}
                   </th>

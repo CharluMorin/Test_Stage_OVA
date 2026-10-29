@@ -8,20 +8,20 @@ export function errorHandler(error, req, res, next) {
   let statusCode = error.statusCode ?? error.status ?? 500;
   let message = error.message;
 
-  if (error.type === 'entity.parse.failed') {
+  if (error.type === "entity.parse.failed") {
     statusCode = 400;
-    message = 'JSON payload invalide';
+    message = "JSON payload invalide";
   }
 
   if (statusCode === 500) {
     console.error(error);
-    message = 'Erreur interne du serveur';
+    message = "Erreur interne du serveur";
   }
 
   return res.status(statusCode).json({
     status: statusCode,
     path: req.originalUrl,
     message,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
