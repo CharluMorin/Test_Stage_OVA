@@ -1,5 +1,5 @@
 <script setup>
-import GroceryView from "./views/groceryView.vue";
+import GroceryView from "./views/GroceryView.vue";
 </script>
 
 <template>

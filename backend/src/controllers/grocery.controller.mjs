@@ -6,101 +6,67 @@ import {
   deleteAllItems,
 } from "../models/grocery.model.mjs";
 
-function response(req, status, message, data) {
-  const response = {
+function buildResponse(req, status, message, data) {
+  const body = {
     status,
     path: req.originalUrl,
     message,
     timestamp: new Date().toISOString(),
   };
 
-  if (data !== undefined) response.data = data;
+  if (data !== undefined) body.data = data;
 
-  return response;
+  return body;
 }
 
-export async function getAllItems(req, res, next) {
-  try {
-    const items = await findAllItems();
-
-    res.location("/grocery");
-    return res
-      .status(200)
-      .json(
-        response(req, 200, "Liste des articles récupérée avec succès", items),
-      );
-  } catch (err) {
-    next(err);
-  }
+function notFoundError() {
+  const error = new Error("Article non trouvé");
+  error.statusCode = 404;
+  return error;
 }
 
-export async function addItem(req, res, next) {
+export function getAllItems(req, res) {
+  const items = findAllItems();
+
+  res
+    .status(200)
+    .json(buildResponse(req, 200, "Liste des articles récupérée avec succès", items));
+}
+
+export function addItem(req, res) {
   const { name, quantity, unit_price } = req.body;
+  const item = createItem({ name, quantity, unit_price });
 
-  try {
-    const item = await createItem({ name, quantity, unit_price });
-
-    res.location(`/grocery/${item.id}`);
-    return res
-      .status(201)
-      .json(response(req, 201, "Item ajouté avec succès", item));
-  } catch (err) {
-    next(err);
-  }
+  res
+    .status(201)
+    .location(`/grocery/${item.id}`)
+    .json(buildResponse(req, 201, "Article ajouté avec succès", item));
 }
 
-export async function modifyItem(req, res, next) {
+export function modifyItem(req, res, next) {
   const id = Number(req.params.id);
   const { name, quantity, unit_price } = req.body;
+  const item = updateItem(id, { name, quantity, unit_price });
 
-  try {
-    const item = await updateItem(id, { name, quantity, unit_price });
+  if (!item) return next(notFoundError());
 
-    if (!item) {
-      const error = new Error("Article non trouvé");
-      error.statusCode = 404;
-      return next(error);
-    }
-
-    res.location(`/grocery/${id}`);
-    return res
-      .status(200)
-      .json(response(req, 200, "Article mis à jour avec succès", item));
-  } catch (err) {
-    next(err);
-  }
+  res
+    .status(200)
+    .json(buildResponse(req, 200, "Article mis à jour avec succès", item));
 }
 
-export async function removeItem(req, res, next) {
+export function removeItem(req, res, next) {
   const id = Number(req.params.id);
 
-  try {
-    const deleted = await deleteItem(id);
+  if (!deleteItem(id)) return next(notFoundError());
 
-    if (!deleted) {
-      const error = new Error("Article non trouvé");
-      error.statusCode = 404;
-      return next(error);
-    }
-
-    res.location("/grocerylist");
-    return res
-      .status(200)
-      .json(response(req, 200, "Article supprimé avec succès"));
-  } catch (err) {
-    next(err);
-  }
+  res.status(200).json(buildResponse(req, 200, "Article supprimé avec succès"));
 }
 
-export async function removeAllItems(req, res, next) {
-  try {
-    await deleteAllItems();
+export function removeAllItems(req, res) {
+  deleteAllItems();
 
-    res.location("/grocery_list");
-    return res
-      .status(200)
-      .json(response(req, 200, "Liste des articles vidée avec succès"));
-  } catch (err) {
-    next(err);
-  }
+  res
+    .status(200)
+    .json(buildResponse(req, 200, "Liste des articles vidée avec succès"));
 }

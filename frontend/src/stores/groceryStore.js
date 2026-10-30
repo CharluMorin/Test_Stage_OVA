@@ -36,16 +36,16 @@ export const useGroceryStore = defineStore("grocery", {
         this.items = await groceryApi.getAll();
       } catch (error) {
         this.notify("error", error.message);
+      } finally {
+        this.loading = false;
       }
-
-      this.loading = false;
     },
 
-    async addItem(item) {
+    async run(action, successMessage) {
       try {
-        await groceryApi.create(item);
+        await action();
         await this.fetchItems();
-        this.notify("success", "Item ajouté");
+        this.notify("success", successMessage);
         return true;
       } catch (error) {
         this.notify("error", error.message);
@@ -53,36 +53,20 @@ export const useGroceryStore = defineStore("grocery", {
       }
     },
 
-    async updateItem(id, item) {
-      try {
-        await groceryApi.update(id, item);
-        await this.fetchItems();
-        this.notify("success", "Item mis à jour");
-        return true;
-      } catch (error) {
-        this.notify("error", error.message);
-        return false;
-      }
+    addItem(item) {
+      return this.run(() => groceryApi.create(item), "Item ajouté");
     },
 
-    async deleteItem(id) {
-      try {
-        await groceryApi.remove(id);
-        await this.fetchItems();
-        this.notify("success", "Item supprimé");
-      } catch (error) {
-        this.notify("error", error.message);
-      }
+    updateItem(id, item) {
+      return this.run(() => groceryApi.update(id, item), "Item mis à jour");
     },
 
-    async clearList() {
-      try {
-        await groceryApi.removeAll();
-        await this.fetchItems();
-        this.notify("success", "Liste vidée");
-      } catch (error) {
-        this.notify("error", error.message);
-      }
+    deleteItem(id) {
+      return this.run(() => groceryApi.remove(id), "Item supprimé");
+    },
+
+    clearList() {
+      return this.run(() => groceryApi.removeAll(), "Liste vidée");
     },
   },
 });

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useGroceryStore } from "../stores/groceryStore";
 
 const store = useGroceryStore();
@@ -7,8 +7,16 @@ const store = useGroceryStore();
 const name = ref("");
 const quantity = ref(1);
 const unitPrice = ref(null);
-
 const editingId = ref(null);
+const submitting = ref(false);
+const errors = ref({});
+
+const currency = new Intl.NumberFormat("fr-CA", {
+  style: "currency",
+  currency: "CAD",
+});
+
+const hasErrors = computed(() => Object.keys(errors.value).length > 0);
 
 onMounted(() => {
   store.fetchItems();
@@ -19,26 +27,51 @@ function resetForm() {
   quantity.value = 1;
   unitPrice.value = null;
   editingId.value = null;
+  errors.value = {};
+}
+
+function validate() {
+  const result = {};
+
+  if (!name.value || name.value.trim() === "") {
+    result.name = "Le nom est requis";
+  } else if (name.value.trim().length > 100) {
+    result.name = "Le nom doit contenir 100 caractères ou moins";
+  }
+
+  if (!Number.isInteger(quantity.value) || quantity.value < 1) {
+    result.quantity = "La quantité doit être un entier >= 1";
+  }
+
+  if (typeof unitPrice.value !== "number" || !(unitPrice.value >= 0.01)) {
+    result.unitPrice = "Le prix doit être >= 0,01 $";
+  } else if (Math.abs(unitPrice.value * 100 - Math.round(unitPrice.value * 100)) > 1e-9) {
+    result.unitPrice = "Le prix doit avoir 2 décimales maximum";
+  }
+
+  errors.value = result;
+  return !hasErrors.value;
 }
 
 async function submitForm() {
+  if (submitting.value || !validate()) return;
+
   const item = {
-    name: name.value,
+    name: name.value.trim(),
     quantity: quantity.value,
     unit_price: unitPrice.value,
   };
 
-  let success;
+  submitting.value = true;
 
-  if (editingId.value === null) {
-    success = await store.addItem(item);
-  } else {
-    success = await store.updateItem(editingId.value, item);
-  }
+  const success =
+    editingId.value === null
+      ? await store.addItem(item)
+      : await store.updateItem(editingId.value, item);
 
-  if (success) {
-    resetForm();
-  }
+  submitting.value = false;
+
+  if (success) resetForm();
 }
 
 function startEdit(item) {
@@ -46,20 +79,25 @@ function startEdit(item) {
   name.value = item.name;
   quantity.value = item.quantity;
   unitPrice.value = item.unit_price;
+  errors.value = {};
 }
 
-function removeItem(item) {
-  store.deleteItem(item.id);
+async function removeItem(item) {
+  const success = await store.deleteItem(item.id);
+
+  if (success && editingId.value === item.id) resetForm();
 }
 
-function clearAll() {
-  if (confirm("Êtes-vous sûr de vouloir vider la liste?")) {
-    store.clearList();
-  }
+async function clearAll() {
+  if (!confirm("Êtes-vous sûr de vouloir vider la liste?")) return;
+
+  const success = await store.clearList();
+
+  if (success) resetForm();
 }
 
 function formatPrice(price) {
-  return price.toFixed(2) + " $";
+  return currency.format(price);
 }
 </script>
 
@@ -76,6 +114,7 @@ function formatPrice(price) {
             ? 'alert-success'
             : 'alert-danger'
         "
+        role="alert"
         style="white-space: pre-line"
       >
         {{ store.notification.message }}
@@ -90,44 +129,65 @@ function formatPrice(price) {
           </h2>
 
           <form novalidate @submit.prevent="submitForm">
-            <div class="row g-2 align-items-end">
+            <div class="row g-2 align-items-start">
               <div class="col-md-5">
-                <label class="form-label small fw-semibold mb-1">Nom</label>
+                <label for="item-name" class="form-label small fw-semibold mb-1"
+                  >Nom</label
+                >
                 <input
+                  id="item-name"
                   v-model="name"
                   type="text"
+                  maxlength="100"
                   class="form-control form-control-sm"
+                  :class="{ 'is-invalid': errors.name }"
                   placeholder="Nom du produit"
                 />
+                <div class="invalid-feedback">{{ errors.name }}</div>
               </div>
 
               <div class="col-md-2">
-                <label class="form-label small fw-semibold mb-1"
+                <label
+                  for="item-quantity"
+                  class="form-label small fw-semibold mb-1"
                   >Quantité</label
                 >
                 <input
+                  id="item-quantity"
                   v-model.number="quantity"
                   type="number"
                   min="1"
+                  step="1"
                   class="form-control form-control-sm"
+                  :class="{ 'is-invalid': errors.quantity }"
                 />
+                <div class="invalid-feedback">{{ errors.quantity }}</div>
               </div>
 
               <div class="col-md-3">
-                <label class="form-label small fw-semibold mb-1">
-                  Prix unitaire ($)
-                </label>
+                <label
+                  for="item-price"
+                  class="form-label small fw-semibold mb-1"
+                  >Prix unitaire ($)</label
+                >
                 <input
+                  id="item-price"
                   v-model.number="unitPrice"
                   type="number"
-                  min="0"
+                  min="0.01"
                   step="0.01"
                   class="form-control form-control-sm"
+                  :class="{ 'is-invalid': errors.unitPrice }"
                 />
+                <div class="invalid-feedback">{{ errors.unitPrice }}</div>
               </div>
 
-              <div class="col-md-2 d-grid">
-                <button type="submit" class="btn btn-success btn-sm">
+              <div class="col-md-2 d-grid align-self-end">
+                <button
+                  type="submit"
+                  class="btn btn-success btn-sm"
+                  :disabled="submitting"
+                >
                   {{ editingId === null ? "Ajouter" : "Sauvegarder" }}
                 </button>
               </div>
@@ -145,7 +205,6 @@ function formatPrice(price) {
         </div>
       </div>
 
-      <!-- Liste -->
       <div class="card border-0 shadow-sm">
         <div class="card-body p-3">
           <div class="d-flex justify-content-between align-items-center mb-3">
@@ -201,9 +260,7 @@ function formatPrice(price) {
                 >
                   <td>{{ item.name }}</td>
                   <td class="text-center">{{ item.quantity }}</td>
-                  <td class="text-end">
-                    {{ formatPrice(item.unit_price) }}
-                  </td>
+                  <td class="text-end">{{ formatPrice(item.unit_price) }}</td>
                   <td class="text-end fw-semibold">
                     {{ formatPrice(item.quantity * item.unit_price) }}
                   </td>

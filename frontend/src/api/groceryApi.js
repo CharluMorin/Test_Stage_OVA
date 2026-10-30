@@ -1,15 +1,22 @@
 const BASE_URL = "/api/grocery";
 
 async function request(path = "", options = {}) {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      headers: { "Content-Type": "application/json" },
+      ...options,
+    });
+  } catch {
+    throw new Error(
+      "Serveur injoignable. Vérifiez que le backend est démarré.",
+    );
+  }
 
   const body = await res.json().catch(() => null);
 
   if (!res.ok) {
-    throw new Error(body?.message ?? "Unexpected error");
+    throw new Error(body?.message ?? "Une erreur inattendue est survenue");
   }
 
   return body;

@@ -1,19 +1,19 @@
 import db from "../config/db.mjs";
 
-export async function findAllItems() {
+export function findAllItems() {
   const query = `SELECT * FROM grocery`;
 
   return db.prepare(query).all();
 }
 
-export async function findItemById(id) {
+export function findItemById(id) {
   const query = `SELECT * FROM grocery
     WHERE id = ?`;
 
   return db.prepare(query).get(id) ?? null;
 }
 
-export async function createItem(item) {
+export function createItem(item) {
   const { name, quantity, unit_price } = item;
 
   const query = `INSERT INTO grocery (name, quantity, unit_price)
@@ -23,7 +23,7 @@ export async function createItem(item) {
   return db.prepare(query).get(name, quantity, unit_price);
 }
 
-export async function updateItem(id, item) {
+export function updateItem(id, item) {
   const { name, quantity, unit_price } = item;
 
   const query = `UPDATE grocery
@@ -37,7 +37,7 @@ export async function updateItem(id, item) {
   return db.prepare(query).get(name, quantity, unit_price, id) ?? null;
 }
 
-export async function deleteItem(id) {
+export function deleteItem(id) {
   const query = `
     DELETE FROM grocery
     WHERE id = ?
@@ -46,6 +46,6 @@ export async function deleteItem(id) {
   return db.prepare(query).run(id).changes > 0;
 }
 
-export async function deleteAllItems() {
+export function deleteAllItems() {
   db.prepare("DELETE FROM grocery").run();
 }
