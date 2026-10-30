@@ -1,9 +1,9 @@
-import Database from 'better-sqlite3';
-import fs from 'node:fs';
+import Database from "better-sqlite3";
+import fs from "node:fs";
 
-fs.mkdirSync('data', { recursive: true });
+fs.mkdirSync("data", { recursive: true });
 
-const db = new Database('data/grocery.db');
+const db = new Database("data/grocery.db");
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS grocery (
